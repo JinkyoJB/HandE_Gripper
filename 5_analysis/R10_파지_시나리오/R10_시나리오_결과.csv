@@ -1,0 +1,4 @@
+﻿rep,gPO_grasp,opening_mm,grasp_gOBJ,grasp_time_ms,CUR_peak_close,gPO_end,gPO_drift,all_phases_held,n_phase_checks
+1,103,31.2,2,244.9,8,103,0,OK,13
+2,103,31.2,2,244.2,8,103,0,OK,13
+3,103,31.2,2,243.9,9,103,0,OK,13

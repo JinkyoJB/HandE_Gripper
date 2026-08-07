@@ -1,0 +1,5 @@
+﻿t_perf,wall_time,event
+89549.575669,2026-07-22T16:07:43.660,specA_rep1_grasp_cmd
+89549.982434,2026-07-22T16:07:44.067,specA_rep1_lift_start
+89553.944912,2026-07-22T16:07:48.028,specA_rep1_hold_start
+89563.945592,2026-07-22T16:07:58.030,specA_rep1_hold_end_obj2

@@ -1,0 +1,17 @@
+[Save ch order]
+Count=2
+Logical ch_Idx0=26
+Logical ch_Idx1=27
+[Save set]
+Set Mode=0
+Interval=0
+Interval kind=0
+Period=7200
+Sampling=100
+Precision=3
+Sample info=0
+DateTime=0
+ChargedTime=0
+ChargedTime2=0
+ChargedTime2 Unit=0
+Cycle=1

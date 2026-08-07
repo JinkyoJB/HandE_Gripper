@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# 편집 중 백업본
+*.bak
+*.bak[0-9]
+*.attempt
+*~
+
+# OS / 에디터
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+.claude/
