@@ -16,3 +16,8 @@ Thumbs.db
 .vscode/
 .idea/
 .claude/
+
+# 분석 스크립트가 생성하는 중간 산출물 (배포본은 실험별 폴더에 있다)
+5_analysis/00_분석스크립트/fig/
+5_analysis/00_분석스크립트/svg/
+__pycache__/
