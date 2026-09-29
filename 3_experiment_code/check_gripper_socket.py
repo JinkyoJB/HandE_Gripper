@@ -48,13 +48,13 @@ def main():
         try:
             sta = int(values["STA"].split()[1])
             print(f"  gSTA={sta} → {STA_MEANING.get(sta, '?')}"
-                  + ("  (아직 미활성 — R01에서 activate 필요)" if sta != 3 else ""))
+                  + ("  (아직 미활성 — 01에서 activate 필요)" if sta != 3 else ""))
         except Exception:
             pass
     cur = "CUR" if values.get("CUR", "").startswith("CUR") else \
           ("COU" if values.get("COU", "").startswith("COU") else None)
-    print(f"  전류 변수: {cur or '미지원 (R05는 gPO/gOBJ만 기록)'}")
-    print("\n판정: 소켓 정상 — 이제 `python run.py r01`로 활성화·개폐 점검 진행 가능")
+    print(f"  전류 변수: {cur or '미지원 (05는 gPO/gOBJ만 기록)'}")
+    print("\n판정: 소켓 정상 — 이제 `python run.py 01`로 활성화·개폐 점검 진행 가능")
 
 
 if __name__ == "__main__":

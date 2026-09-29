@@ -11,7 +11,7 @@ import time
 
 WRITE_VARS = ("ACT", "GTO", "ATR", "FOR", "SPE", "POS")
 READ_VARS = ("STA", "PRE", "POS", "OBJ", "FLT")
-OPTIONAL_VARS = ("CUR", "COU")   # 전류 후보 이름 — R01에서 지원 여부 확인
+OPTIONAL_VARS = ("CUR", "COU")   # 전류 후보 이름 — 01에서 지원 여부 확인
 
 
 class HandE:

@@ -21,17 +21,17 @@ Hand-E Sim-to-Real 정합성 실험의 실험 목록(실험 10건)을 실행하�
 ## 사용법 — 실험계획표 순서대로
 
 ```bash
-python run.py r01        # 점검: 연결·활성화·변수 지원·폴링 주기 실측
-python run.py r02        # 무부하 끝점 gPO (5회)
-python run.py r03        # rPR 7단계 버니어 실측 — 화면 안내에 따라 캘리퍼스 값 입력
-python run.py r04        # 속도 스텝응답 (rSP 5단계 × 3회)
-python run.py r05        # 힘 스윕 — 시편 A 파지 10초 유지 (rFR 5단계 × 3회)
-python run.py r06        # (선택) 인장 유지력 — 로드셀 값 수동 입력
-python run.py r07        # gOBJ 타이밍 — 시편 A, rFR×rSP 16조합 × 2회
-python run.py r08        # 무부하 폐합 대조군 (rSP 4단계 × 2회)
-python run.py r09-draw   # 미학습 조합 10종 추첨 (최초 1회, r09_combos.csv 생성)
-python run.py r09        # 미학습 조합 실행
-python run.py r10        # Grasp Size: 파지→100mm→10초 유지 (--ur: UR 자동 이동)
+python run.py 01        # 점검: 연결·활성화·변수 지원·폴링 주기 실측
+python run.py 02        # 무부하 끝점 gPO (5회)
+python run.py 03        # rPR 7단계 버니어 실측 — 화면 안내에 따라 캘리퍼스 값 입력
+python run.py 04        # 속도 스텝응답 (rSP 5단계 × 3회)
+python run.py 05        # 힘 스윕 — 시편 A 파지 10초 유지 (rFR 5단계 × 3회)
+python run.py 06        # (선택) 인장 유지력 — 로드셀 값 수동 입력
+python run.py 07        # gOBJ 타이밍 — 시편 A, rFR×rSP 16조합 × 2회
+python run.py 08        # 무부하 폐합 대조군 (rSP 4단계 × 2회)
+python run.py 09-draw   # 미학습 조합 10종 추첨 (최초 1회, untrained_combos.csv 생성)
+python run.py 09        # 미학습 조합 실행
+python run.py 10        # Grasp Size: 파지→100mm→10초 유지 (--ur: UR 자동 이동)
 python run.py summary    # 모든 런 결과 → 결과 기입용 문장으로 요약 출력·저장
 ```
 
@@ -47,11 +47,11 @@ python run.py summary    # 모든 런 결과 → 결과 기입용 문장으로 �
 
 `logs/` 폴더에 실험마다 3종:
 
-- `handE_R{런}_{일시}.csv` — 원시 폴링 시계열 (t_perf, wall_time, POS, OBJ, STA, FLT[, CUR])
-- `handE_R{런}_{일시}_events.csv` — 명령 시점 마커 (시계열과 같은 t_perf 축)
-- `handE_R{런}_{일시}_result.csv` — 런 요약 (실험계획표 결과 기입용 값)
+- `handE_{번호}_{일시}.csv` — 원시 폴링 시계열 (t_perf, wall_time, POS, OBJ, STA, FLT[, CUR])
+- `handE_{번호}_{일시}_events.csv` — 명령 시점 마커 (시계열과 같은 t_perf 축)
+- `handE_{번호}_{일시}_result.csv` — 런 요약 (실험계획표 결과 기입용 값)
 
-실물–가상 비교(시뮬 비교)은 `r09_combos.csv`와 미학습 조합 검증/파지 시나리오 이벤트 CSV의 명령 시퀀스를 Isaac Sim에 재생하여 수행한다.
+실물–가상 비교(시뮬 비교)은 `untrained_combos.csv`와 미학습 조합 검증/파지 시나리오 이벤트 CSV의 명령 시퀀스를 Isaac Sim에 재생하여 수행한다.
 
 ## 주의
 

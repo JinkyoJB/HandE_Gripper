@@ -1,4 +1,4 @@
-"""R08·R09 동기화 교차검증을 정지구간 기준으로 정밀 산출하고 그림을 재생성."""
+"""08·09 동기화 교차검증을 정지구간 기준으로 정밀 산출하고 그림을 재생성."""
 import json, os
 import numpy as np
 import matplotlib
@@ -57,19 +57,19 @@ def crosscheck(run, off):
 
 
 out = {}
-for run in ["R08", "R09"]:
+for run in ["08", "09"]:
     off = R["offset"][run]
     c = crosscheck(run, off)
     out[run] = c["stats"]
     out[run]["offset_s"] = off
     print(run, c["stats"])
 
-# ── R09 그림 재생성 (동기화 시계열 + 정지구간 잔차)
-c = crosscheck("R09", R["offset"]["R09"])
+# ── 09 그림 재생성 (동기화 시계열 + 정지구간 잔차)
+c = crosscheck("09", R["offset"]["09"])
 fig, ax = plt.subplots(1, 2, figsize=(10, 3.4), gridspec_kw={"width_ratios": [1.75, 1]})
 ax[0].plot(c["g"], c["gm"], color=C1, lw=1.1, label="gPO 환산 개구 (제어 노트북)")
 ax[0].plot(c["g"], c["lm"], color=C2, lw=0.9, ls="--", label="레이저 실측 개구 (측정장비)")
-ax[0].set_xlabel("측정장비 시간 [s]   (제어 로그 -%.2f s 정합)" % R["offset"]["R09"])
+ax[0].set_xlabel("측정장비 시간 [s]   (제어 로그 -%.2f s 정합)" % R["offset"]["09"])
 ax[0].set_ylabel("개구 [mm]"); ax[0].legend(fontsize=8, loc="lower left")
 ax[0].set_title("동기화된 개구 시계열 — 미학습 조합 10종 × 2회", fontsize=10)
 sc = ax[1].scatter(c["pts"][:, 0], c["err"], c=c["pts"][:, 2], cmap="viridis", s=26)
@@ -77,26 +77,26 @@ ax[1].axhline(0, color="gray", lw=0.8)
 ax[1].axhspan(-0.5, 0.5, color=C3, alpha=0.12)
 ax[1].text(2, 0.53, "합격 기준 ±0.5 mm", fontsize=7.5, color=C3)
 ax[1].set_xlabel("개구 [mm]"); ax[1].set_ylabel("레이저 - gPO환산 [mm]")
-ax[1].set_title("정지구간 편차  RMSE %.3f mm" % out["R09"]["rmse_mm"], fontsize=10)
+ax[1].set_title("정지구간 편차  RMSE %.3f mm" % out["09"]["rmse_mm"], fontsize=10)
 fig.colorbar(sc, ax=ax[1], label="정지 길이 [s]")
-fig.suptitle("R09. 미학습 조합 — 두 계통 교차 검증", fontsize=11)
-fig.savefig(f"{OUT}/R09.svg"); plt.close(fig)
+fig.suptitle("09. 미학습 조합 — 두 계통 교차 검증", fontsize=11)
+fig.savefig(f"{OUT}/09.svg"); plt.close(fig)
 
-# ── R08 그림 (무부하 대조군 동기화)
-c8 = crosscheck("R08", R["offset"]["R08"])
+# ── 08 그림 (무부하 대조군 동기화)
+c8 = crosscheck("08", R["offset"]["08"])
 d8 = c8["d"]
 fig, ax = plt.subplots(1, 2, figsize=(10, 3.3), gridspec_kw={"width_ratios": [1.75, 1]})
 ax[0].plot(c8["g"], c8["gm"], color=C1, lw=1.1, label="gPO 환산 개구")
 ax[0].plot(c8["g"], c8["lm"], color=C2, lw=0.9, ls="--", label="레이저 실측 개구")
 ax2 = ax[0].twinx()
-ax2.plot(d8["tc"] - R["offset"]["R08"], d8["ctrl"]["OBJ"], color=C3, lw=0.8, alpha=0.75)
+ax2.plot(d8["tc"] - R["offset"]["08"], d8["ctrl"]["OBJ"], color=C3, lw=0.8, alpha=0.75)
 ax2.set_ylabel("gOBJ", color=C3); ax2.set_ylim(-0.2, 3.6); ax2.grid(False)
-ax[0].set_xlabel("측정장비 시간 [s]   (제어 로그 -%.2f s 정합)" % R["offset"]["R08"])
+ax[0].set_xlabel("측정장비 시간 [s]   (제어 로그 -%.2f s 정합)" % R["offset"]["08"])
 ax[0].set_ylabel("개구 [mm]"); ax[0].legend(fontsize=8, loc="center left")
 ax[0].set_title("동기화된 개구와 gOBJ — 무부하 폐합", fontsize=10)
-res = load_result(sorted(__import__("glob").glob(os.path.join(CTRL, "R08*", "*_result.csv")))[0])
+res = load_result(sorted(__import__("glob").glob(os.path.join(CTRL, "08_*", "*_result.csv")))[0])
 sp = [int(r["rSP"]) for r in res]
-ev = load_events(sorted(__import__("glob").glob(os.path.join(CTRL, "R08*", "*_events.csv")))[0])
+ev = load_events(sorted(__import__("glob").glob(os.path.join(CTRL, "08_*", "*_events.csv")))[0])
 lat = {}
 cmd = None; key = None
 for t, n in ev:
@@ -109,9 +109,9 @@ ax[1].bar([str(k) for k in ks], [np.mean(lat[k]) for k in ks],
           yerr=[np.std(lat[k]) for k in ks], color=C1, capsize=3)
 ax[1].set_xlabel("rSP [count]"); ax[1].set_ylabel("지령 → gOBJ=3 [ms]")
 ax[1].set_title("목표 도달 판정 시간", fontsize=10)
-fig.suptitle("R08. 무부하 대조군", fontsize=11)
-fig.savefig(f"{OUT}/R08.svg"); plt.close(fig)
-out["R08"]["arrive_by_rsp"] = {str(k): [round(float(np.mean(lat[k])), 1),
+fig.suptitle("08. 무부하 대조군", fontsize=11)
+fig.savefig(f"{OUT}/08.svg"); plt.close(fig)
+out["08"]["arrive_by_rsp"] = {str(k): [round(float(np.mean(lat[k])), 1),
                                         round(float(np.std(lat[k])), 1)] for k in ks}
 
 R["sync"] = out

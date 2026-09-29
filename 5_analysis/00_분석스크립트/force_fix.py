@@ -22,8 +22,8 @@ def grip_force(d):
     return F - np.median(F[:300])
 
 
-d = series("R07")
-off = json.load(open(os.path.join(HERE, "summary.json")))["offset"]["R07"]
+d = series("07")
+off = json.load(open(os.path.join(HERE, "summary.json")))["offset"]["07"]
 F = grip_force(d)
 
 # 각 파지는 0.4 s 남짓의 짧은 펄스다. 펄스 평탄역(양끝 3샘플 제외)의 평균을 값으로 쓴다.

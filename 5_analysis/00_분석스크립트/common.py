@@ -8,7 +8,7 @@ OUT  = os.path.join(REPO, "5_analysis")          # 분석 산출물 출력 위�
 MEAS = os.path.join(ROOT, "1_스마트그리퍼측정장비_데이터")
 CTRL = os.path.join(ROOT, "2_로봇_그리퍼_제어_데이터")
 
-# R03 실측 보정식 (r05_precheck.py 에 기록된 값) — 본 분석에서 재도출하여 검증
+# 03 실측 보정식 (force_precheck.py 에 기록된 값) — 본 분석에서 재도출하여 검증
 CAL_A, CAL_B = 53.489, -0.2164
 
 
@@ -91,9 +91,9 @@ def grip_force(hdr, a, tare=300):
 
 
 def find_files(run):
-    md = glob.glob(os.path.join(MEAS, f"*{run}*", "*.csv"))
+    md = glob.glob(os.path.join(MEAS, f"{run}_*", "*.csv"))
     meas = [f for f in md if " " in os.path.basename(f)]
-    cd = glob.glob(os.path.join(CTRL, f"*{run}*", "*.csv"))
+    cd = glob.glob(os.path.join(CTRL, f"{run}_*", "*.csv"))
     raw = [f for f in cd if not f.endswith(("_result.csv", "_events.csv"))]
     ev = [f for f in cd if f.endswith("_events.csv")]
     res = [f for f in cd if f.endswith("_result.csv")]

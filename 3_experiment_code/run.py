@@ -1,17 +1,17 @@
 """Hand-E Sim-to-Real 정합성 실험 실행기.
 
 실험계획표의 런 번호와 1:1 대응:
-    python run.py r01          # 점검: 활성화·변수 지원·폴링 주기
-    python run.py r02          # 무부하 끝점 gPO
-    python run.py r03          # rPR 7단계 버니어 실측 (진행자 입력)
-    python run.py r04          # 속도 스텝응답
-    python run.py r05          # 힘 스윕 (시편 A 파지 10초 유지)
-    python run.py r06          # (선택) 인장 유지력 보조 로깅
-    python run.py r07          # gOBJ 타이밍 (rFR×rSP 16조합)
-    python run.py r08          # 무부하 폐합 대조군
-    python run.py r09-draw     # 미학습 조합 10종 추첨 (1회만)
-    python run.py r09          # 미학습 조합 실행
-    python run.py r10          # Grasp Size 시나리오 (--ur: UR 자동 이동)
+    python run.py 01          # 점검: 활성화·변수 지원·폴링 주기
+    python run.py 02          # 무부하 끝점 gPO
+    python run.py 03          # rPR 7단계 버니어 실측 (진행자 입력)
+    python run.py 04          # 속도 스텝응답
+    python run.py 05          # 힘 스윕 (시편 A 파지 10초 유지)
+    python run.py 06          # (선택) 인장 유지력 보조 로깅
+    python run.py 07          # gOBJ 타이밍 (rFR×rSP 16조합)
+    python run.py 08          # 무부하 폐합 대조군
+    python run.py 09-draw     # 미학습 조합 10종 추첨 (1회만)
+    python run.py 09          # 미학습 조합 실행
+    python run.py 10          # Grasp Size 시나리오 (--ur: UR 자동 이동)
 
 각 런은 원시 폴링 CSV + 이벤트 CSV + 결과 요약 CSV를 logs/ 에 남긴다.
 """
@@ -60,8 +60,8 @@ def pause(msg):
     input(f">>> {msg} — 준비되면 Enter: ")
 
 
-# ---------------------------------------------------------------- R01 -----
-def r01(args):
+# ---------------------------------------------------------------- 01 -----
+def exp01(args):
     """점검: 연결·활성화·변수 지원 여부·폴링 주기 실측."""
     with HandE(C.ROBOT_IP, C.GRIPPER_PORT, C.SOCKET_TIMEOUT) as gr:
         print(f"연결 OK: {C.ROBOT_IP}:{C.GRIPPER_PORT}")
@@ -70,11 +70,11 @@ def r01(args):
         for k, v in probed.items():
             print(f"  {k}: {'OK (=%s)' % v if v is not None else '미지원'}")
         if gr.cur_var is None:
-            print("⚠ 전류(CUR) 변수 미지원 — R05는 gOBJ/gPO 기반으로만 기록됨")
+            print("⚠ 전류(CUR) 변수 미지원 — 05는 gOBJ/gPO 기반으로만 기록됨")
         gr.activate()
         print("활성화 OK (gSTA=3)")
         # 폴링 주기 실측: 무부하 1왕복 동안 폴링
-        with PollLogger(C.ROBOT_IP, C.GRIPPER_PORT, OUT, "R01") as log:
+        with PollLogger(C.ROBOT_IP, C.GRIPPER_PORT, OUT, "01") as log:
             time.sleep(0.5)
             log.mark("close_cmd")
             gr.move(255, 128, 64)
@@ -87,20 +87,20 @@ def r01(args):
         print(f"→ 기입: gFLT={gr.get_var('FLT')}, 폴링 주기={log.mean_period_ms:.1f}ms, gSTA=3")
 
 
-# ---------------------------------------------------------------- R02 -----
-def r02(args):
-    fp, w, path = result_writer("R02", ["rep", "gPO_open", "gPO_closed"])
+# ---------------------------------------------------------------- 02 -----
+def exp02(args):
+    fp, w, path = result_writer("02", ["rep", "gPO_open", "gPO_closed"])
     opens, closes = [], []
     with HandE(C.ROBOT_IP, C.GRIPPER_PORT, C.SOCKET_TIMEOUT) as gr:
         routine_header(gr)
-        for rep in range(1, C.R02_REPS + 1):
+        for rep in range(1, C.EXP02_REPS + 1):
             gr.move(0, 128, 128)
             gr.wait_arrival(C.MOVE_TIMEOUT_S)
-            time.sleep(C.R02_SETTLE_S)
+            time.sleep(C.EXP02_SETTLE_S)
             po_open = gr.get_var("POS")
             gr.move(255, 128, 128)
             gr.wait_arrival(C.MOVE_TIMEOUT_S)
-            time.sleep(C.R02_SETTLE_S)
+            time.sleep(C.EXP02_SETTLE_S)
             po_closed = gr.get_var("POS")
             w.writerow([rep, po_open, po_closed])
             opens.append(po_open)
@@ -114,34 +114,34 @@ def r02(args):
     print(f"결과 파일: {path}")
 
 
-# ---------------------------------------------------------------- R03 -----
-def r03(args):
+# ---------------------------------------------------------------- 03 -----
+def exp03(args):
     fp, w, path = result_writer(
-        "R03", ["direction", "rPR", "gPO", "caliper_mm_reads", "caliper_mm_mean"])
+        "03", ["direction", "rPR", "gPO", "caliper_mm_reads", "caliper_mm_mean"])
     with HandE(C.ROBOT_IP, C.GRIPPER_PORT, C.SOCKET_TIMEOUT) as gr:
         routine_header(gr)
         print("측정 규칙: 손끝 패드 중앙·동일 깊이, 캘리퍼스는 밀지 않고 가볍게 접촉,"
-              f" 지점당 {C.R03_CALIPER_READS}회 읽기\n")
-        plans = [("closing", 0, C.R03_RPR_STEPS),            # 0에서 출발해 닫힘 방향 접근
-                 ("opening", 255, C.R03_RPR_STEPS[::-1])]    # 255에서 출발해 열림 방향 접근
+              f" 지점당 {C.EXP03_CALIPER_READS}회 읽기\n")
+        plans = [("closing", 0, C.EXP03_RPR_STEPS),            # 0에서 출발해 닫힘 방향 접근
+                 ("opening", 255, C.EXP03_RPR_STEPS[::-1])]    # 255에서 출발해 열림 방향 접근
         for direction, start, steps in plans:
             print(f"=== {direction} 방향 ({'0→값' if start == 0 else '255→값'}) ===")
             for rpr in steps:
-                gr.move(start, C.R03_SPE, C.R03_FOR)
+                gr.move(start, C.EXP03_SPE, C.EXP03_FOR)
                 gr.wait_arrival(C.MOVE_TIMEOUT_S)
                 time.sleep(0.5)
-                gr.move(rpr, C.R03_SPE, C.R03_FOR)
+                gr.move(rpr, C.EXP03_SPE, C.EXP03_FOR)
                 gr.wait_arrival(C.MOVE_TIMEOUT_S)
                 time.sleep(1.0)
                 gpo = gr.get_var("POS")
                 reads = []
-                while len(reads) < C.R03_CALIPER_READS:
+                while len(reads) < C.EXP03_CALIPER_READS:
                     raw = input(f"  rPR={rpr} (gPO={gpo}) — 실측 개구 mm "
-                                f"({C.R03_CALIPER_READS}회, 쉼표 구분): ").strip()
+                                f"({C.EXP03_CALIPER_READS}회, 쉼표 구분): ").strip()
                     try:
                         reads = [float(x) for x in raw.split(",")]
-                        if len(reads) != C.R03_CALIPER_READS:
-                            print(f"  ⚠ {C.R03_CALIPER_READS}개 필요"); reads = []
+                        if len(reads) != C.EXP03_CALIPER_READS:
+                            print(f"  ⚠ {C.EXP03_CALIPER_READS}개 필요"); reads = []
                     except ValueError:
                         print("  ⚠ 숫자만 입력"); reads = []
                 w.writerow([direction, rpr, gpo,
@@ -153,14 +153,14 @@ def r03(args):
     print(f"\n결과 파일: {path}")
 
 
-# ---------------------------------------------------------------- R04 -----
-def r04(args):
-    fp, w, path = result_writer("R04", ["rSP", "rep", "direction", "move_time_s"])
+# ---------------------------------------------------------------- 04 -----
+def exp04(args):
+    fp, w, path = result_writer("04", ["rSP", "rep", "direction", "move_time_s"])
     with HandE(C.ROBOT_IP, C.GRIPPER_PORT, C.SOCKET_TIMEOUT) as gr:
         routine_header(gr)
-        with PollLogger(C.ROBOT_IP, C.GRIPPER_PORT, OUT, "R04") as log:
-            for rsp in C.R04_RSP_LEVELS:
-                for rep in range(1, C.R04_REPS + 1):
+        with PollLogger(C.ROBOT_IP, C.GRIPPER_PORT, OUT, "04") as log:
+            for rsp in C.EXP04_RSP_LEVELS:
+                for rep in range(1, C.EXP04_REPS + 1):
                     for direction, target in (("close", 255), ("open", 0)):
                         time.sleep(0.5)
                         log.mark(f"rSP={rsp}_rep{rep}_{direction}_cmd")
@@ -175,32 +175,32 @@ def r04(args):
         gr.move(0, 128, 64)
         gr.wait_arrival(C.MOVE_TIMEOUT_S)
     fp.close()
-    print(f"\n결과: {path}\n시계열: {os.path.join(OUT, '(R04 폴링 CSV)')} — CCTV 이동시간과 교차 확인")
+    print(f"\n결과: {path}\n시계열: {os.path.join(OUT, '(04 폴링 CSV)')} — CCTV 이동시간과 교차 확인")
 
 
-# ---------------------------------------------------------------- R05 -----
-def r05(args):
-    fp, w, path = result_writer("R05", ["rFR", "rep", "gOBJ", "gPO_stop", "CUR_steady", "CUR_note"])
+# ---------------------------------------------------------------- 05 -----
+def exp05(args):
+    fp, w, path = result_writer("05", ["rFR", "rep", "gOBJ", "gPO_stop", "CUR_steady", "CUR_note"])
     with HandE(C.ROBOT_IP, C.GRIPPER_PORT, C.SOCKET_TIMEOUT) as gr:
         routine_header(gr)
         has_cur = gr.probe() and gr.cur_var is not None
         if not has_cur:
             print("⚠ 전류 변수 미지원 — CUR 열은 공란, 시계열은 gPO/gOBJ만 기록\n")
         pause("시편 A를 위치 핀에 고정하고 그리퍼를 파지 위치로 이송")
-        with PollLogger(C.ROBOT_IP, C.GRIPPER_PORT, OUT, "R05") as log:
-            for rfr in C.R05_RFR_LEVELS:
-                for rep in range(1, C.R05_REPS + 1):
-                    gr.move(0, C.R05_SPE, 64)
+        with PollLogger(C.ROBOT_IP, C.GRIPPER_PORT, OUT, "05") as log:
+            for rfr in C.EXP05_RFR_LEVELS:
+                for rep in range(1, C.EXP05_REPS + 1):
+                    gr.move(0, C.EXP05_SPE, 64)
                     gr.wait_arrival(C.MOVE_TIMEOUT_S)
                     time.sleep(0.5)
                     log.mark(f"rFR={rfr}_rep{rep}_grasp_cmd")
-                    gr.move(255, C.R05_SPE, rfr)
+                    gr.move(255, C.EXP05_SPE, rfr)
                     obj = gr.wait_arrival(C.MOVE_TIMEOUT_S)
                     log.mark(f"rFR={rfr}_rep{rep}_hold_start_obj{obj}")
                     # 10초 유지 중 전류 정상값 수집
                     curs = []
                     t0 = time.perf_counter()
-                    while time.perf_counter() - t0 < C.R05_HOLD_S:
+                    while time.perf_counter() - t0 < C.EXP05_HOLD_S:
                         if has_cur:
                             curs.append(gr.get_var(gr.cur_var))
                         time.sleep(0.1)
@@ -217,16 +217,16 @@ def r05(args):
     print(f"\n결과 파일: {path}")
 
 
-# ---------------------------------------------------------------- R06 -----
-def r06(args):
+# ---------------------------------------------------------------- 06 -----
+def exp06(args):
     """(선택) 인장 유지력 — 로드셀 판독은 외부 표시기에서 진행자가 읽어 입력."""
-    fp, w, path = result_writer("R06", ["rFR", "rep", "slip_force_N", "gOBJ_after_slip"])
+    fp, w, path = result_writer("06", ["rFR", "rep", "slip_force_N", "gOBJ_after_slip"])
     with HandE(C.ROBOT_IP, C.GRIPPER_PORT, C.SOCKET_TIMEOUT) as gr:
         routine_header(gr)
         pause("와이어+500N 로드셀 구성 확인, 환봉에 와이어 연결")
-        with PollLogger(C.ROBOT_IP, C.GRIPPER_PORT, OUT, "R06") as log:
-            for rfr in C.R06_RFR_LEVELS:
-                for rep in range(1, C.R06_REPS + 1):
+        with PollLogger(C.ROBOT_IP, C.GRIPPER_PORT, OUT, "06") as log:
+            for rfr in C.EXP06_RFR_LEVELS:
+                for rep in range(1, C.EXP06_REPS + 1):
                     gr.move(0, 128, 64)
                     gr.wait_arrival(C.MOVE_TIMEOUT_S)
                     pause(f"rFR={rfr} rep{rep}: 환봉을 파지 위치에 배치")
@@ -245,7 +245,7 @@ def r06(args):
     print(f"\n결과 파일: {path}")
 
 
-# ------------------------------------------------------------ R07 / R08 -----
+# ------------------------------------------------------------ 07 / 08 -----
 def _timed_grasp(gr, log, tag, rpr, rsp, rfr):
     """파지 1회: 명령→gPO 정지 시점·gOBJ 전환 시점을 고속 폴링으로 포착."""
     gr.move(0, 128, 64)
@@ -276,15 +276,15 @@ def _timed_grasp(gr, log, tag, rpr, rsp, rfr):
     return obj_final, last_po, debounce_ms
 
 
-def r07(args):
-    fp, w, path = result_writer("R07", ["rFR", "rSP", "rep", "gOBJ", "gPO_stop", "debounce_ms"])
+def exp07(args):
+    fp, w, path = result_writer("07", ["rFR", "rSP", "rep", "gOBJ", "gPO_stop", "debounce_ms"])
     with HandE(C.ROBOT_IP, C.GRIPPER_PORT, C.SOCKET_TIMEOUT) as gr:
         routine_header(gr)
         pause("시편 A를 위치 핀에 고정")
-        with PollLogger(C.ROBOT_IP, C.GRIPPER_PORT, OUT, "R07") as log:
-            for rfr in C.R07_RFR_LEVELS:
-                for rsp in C.R07_RSP_LEVELS:
-                    for rep in range(1, C.R07_REPS + 1):
+        with PollLogger(C.ROBOT_IP, C.GRIPPER_PORT, OUT, "07") as log:
+            for rfr in C.EXP07_RFR_LEVELS:
+                for rsp in C.EXP07_RSP_LEVELS:
+                    for rep in range(1, C.EXP07_REPS + 1):
                         tag = f"rFR{rfr}_rSP{rsp}_rep{rep}"
                         obj, gpo, db = _timed_grasp(gr, log, tag, 255, rsp, rfr)
                         w.writerow([rfr, rsp, rep, obj, gpo,
@@ -297,14 +297,14 @@ def r07(args):
     print(f"\n결과 파일: {path}")
 
 
-def r08(args):
-    fp, w, path = result_writer("R08", ["rSP", "rep", "gOBJ", "gPO_stop", "debounce_ms"])
+def exp08(args):
+    fp, w, path = result_writer("08", ["rSP", "rep", "gOBJ", "gPO_stop", "debounce_ms"])
     with HandE(C.ROBOT_IP, C.GRIPPER_PORT, C.SOCKET_TIMEOUT) as gr:
         routine_header(gr)
         pause("무부하 확인 (손가락 사이 비움)")
-        with PollLogger(C.ROBOT_IP, C.GRIPPER_PORT, OUT, "R08") as log:
-            for rsp in C.R08_RSP_LEVELS:
-                for rep in range(1, C.R08_REPS + 1):
+        with PollLogger(C.ROBOT_IP, C.GRIPPER_PORT, OUT, "08") as log:
+            for rsp in C.EXP08_RSP_LEVELS:
+                for rep in range(1, C.EXP08_REPS + 1):
                     tag = f"noload_rSP{rsp}_rep{rep}"
                     obj, gpo, db = _timed_grasp(gr, log, tag, 255, rsp, 128)
                     w.writerow([rsp, rep, obj, gpo, f"{db:.1f}" if db is not None else ""])
@@ -316,15 +316,15 @@ def r08(args):
     print(f"\n결과 파일: {path}")
 
 
-# ---------------------------------------------------------------- R09 -----
-def r09_draw(args):
+# ---------------------------------------------------------------- 09 -----
+def exp09_draw(args):
     """미학습 조합 추첨 — 피팅 런에 쓴 값(rPR 끝점·7단계, rSP/rFR 레벨)과 겹치지 않게."""
-    used_rpr = set([0, 255] + C.R03_RPR_STEPS)
-    used_rsp = set(C.R04_RSP_LEVELS + C.R07_RSP_LEVELS + [C.R03_SPE, C.R05_SPE])
-    used_rfr = set(C.R05_RFR_LEVELS + C.R07_RFR_LEVELS + [C.R03_FOR])
-    rng = random.Random(C.R09_SEED)
+    used_rpr = set([0, 255] + C.EXP03_RPR_STEPS)
+    used_rsp = set(C.EXP04_RSP_LEVELS + C.EXP07_RSP_LEVELS + [C.EXP03_SPE, C.EXP05_SPE])
+    used_rfr = set(C.EXP05_RFR_LEVELS + C.EXP07_RFR_LEVELS + [C.EXP03_FOR])
+    rng = random.Random(C.EXP09_SEED)
     combos, seen = [], set()
-    while len(combos) < C.R09_N_COMBOS:
+    while len(combos) < C.EXP09_N_COMBOS:
         rpr = rng.randrange(10, 246)
         rsp = rng.randrange(20, 256)
         rfr = rng.randrange(0, 256)
@@ -334,31 +334,31 @@ def r09_draw(args):
             continue
         seen.add((rpr, rsp, rfr))
         combos.append((rpr, rsp, rfr))
-    path = os.path.join(HERE, C.R09_COMBO_FILE)
+    path = os.path.join(HERE, C.EXP09_COMBO_FILE)
     with open(path, "w", newline="", encoding="utf-8-sig") as fp:
         w = csv.writer(fp)
         w.writerow(["combo_id", "rPR", "rSP", "rFR"])
         for i, (a, b, c) in enumerate(combos, 1):
             w.writerow([i, a, b, c])
-    print(f"미학습 조합 {len(combos)}종 저장: {path} (seed={C.R09_SEED})")
+    print(f"미학습 조합 {len(combos)}종 저장: {path} (seed={C.EXP09_SEED})")
     for i, (a, b, c) in enumerate(combos, 1):
         print(f"  #{i}: rPR={a}, rSP={b}, rFR={c}")
 
 
-def r09(args):
-    combo_path = os.path.join(HERE, C.R09_COMBO_FILE)
+def exp09(args):
+    combo_path = os.path.join(HERE, C.EXP09_COMBO_FILE)
     if not os.path.exists(combo_path):
-        sys.exit("조합 파일 없음 — 먼저 `python run.py r09-draw` 실행")
+        sys.exit("조합 파일 없음 — 먼저 `python run.py 09-draw` 실행")
     with open(combo_path, newline="", encoding="utf-8-sig") as fp:
         combos = [(int(r["rPR"]), int(r["rSP"]), int(r["rFR"]))
                   for r in csv.DictReader(fp)]
-    fp2, w, path = result_writer("R09", ["combo_id", "rep", "rPR", "rSP", "rFR", "gOBJ", "gPO_final"])
+    fp2, w, path = result_writer("09", ["combo_id", "rep", "rPR", "rSP", "rFR", "gOBJ", "gPO_final"])
     with HandE(C.ROBOT_IP, C.GRIPPER_PORT, C.SOCKET_TIMEOUT) as gr:
         routine_header(gr)
-        pause("R09 시나리오 구성 확인 (무부하 기준; 시편 사용 시 별도 기록)")
-        with PollLogger(C.ROBOT_IP, C.GRIPPER_PORT, OUT, "R09") as log:
+        pause("09 시나리오 구성 확인 (무부하 기준; 시편 사용 시 별도 기록)")
+        with PollLogger(C.ROBOT_IP, C.GRIPPER_PORT, OUT, "09") as log:
             for cid, (rpr, rsp, rfr) in enumerate(combos, 1):
-                for rep in range(1, C.R09_REPS + 1):
+                for rep in range(1, C.EXP09_REPS + 1):
                     gr.move(0, 128, 64)
                     gr.wait_arrival(C.MOVE_TIMEOUT_S)
                     time.sleep(0.5)
@@ -373,13 +373,13 @@ def r09(args):
         gr.move(0, 128, 64)
         gr.wait_arrival(C.MOVE_TIMEOUT_S)
     fp2.close()
-    print(f"\n결과 파일: {path} — 동일 조합을 Isaac Sim(R11)에 재생")
+    print(f"\n결과 파일: {path} — 동일 조합을 Isaac Sim(11)에 재생")
 
 
-# ---------------------------------------------------------------- R10 -----
-def r10(args):
+# ---------------------------------------------------------------- 10 -----
+def exp10(args):
     fp, w, path = result_writer(
-        "R10", ["specimen", "rep", "grasp_gOBJ", "hold_gOBJ", "success"])
+        "10", ["specimen", "rep", "grasp_gOBJ", "hold_gOBJ", "success"])
     ur = None
     if args.ur:
         try:
@@ -391,14 +391,14 @@ def r10(args):
             sys.exit("ur_rtde 미설치 — `pip install ur_rtde` 또는 --ur 없이 수동 이동")
     with HandE(C.ROBOT_IP, C.GRIPPER_PORT, C.SOCKET_TIMEOUT) as gr:
         routine_header(gr)
-        with PollLogger(C.ROBOT_IP, C.GRIPPER_PORT, OUT, "R10") as log:
-            for spec in C.R10_SPECIMENS:
-                for rep in range(1, C.R10_REPS + 1):
-                    gr.move(0, C.R10_GRASP_SPE, 64)
+        with PollLogger(C.ROBOT_IP, C.GRIPPER_PORT, OUT, "10") as log:
+            for spec in C.EXP10_SPECIMENS:
+                for rep in range(1, C.EXP10_REPS + 1):
+                    gr.move(0, C.EXP10_GRASP_SPE, 64)
                     gr.wait_arrival(C.MOVE_TIMEOUT_S)
                     pause(f"시편 {spec} rep{rep}: 시편 고정·그리퍼 파지 위치 확인")
                     log.mark(f"spec{spec}_rep{rep}_grasp_cmd")
-                    gr.move(255, C.R10_GRASP_SPE, C.R10_GRASP_FOR)
+                    gr.move(255, C.EXP10_GRASP_SPE, C.EXP10_GRASP_FOR)
                     grasp_obj = gr.wait_arrival(C.MOVE_TIMEOUT_S)
                     if grasp_obj != 2:
                         print(f"  ⚠ 파지 실패 (gOBJ={grasp_obj})")
@@ -409,12 +409,12 @@ def r10(args):
                     if ur:
                         ctrl, recv = ur
                         pose = recv.getActualTCPPose()
-                        pose[2] += C.R10_LIFT_MM / 1000.0
+                        pose[2] += C.EXP10_LIFT_MM / 1000.0
                         ctrl.moveL(pose, C.UR_LIFT_SPEED, C.UR_LIFT_ACC)
                     else:
-                        pause(f"수동으로 +{C.R10_LIFT_MM:.0f}mm 들어올린 후")
+                        pause(f"수동으로 +{C.EXP10_LIFT_MM:.0f}mm 들어올린 후")
                     log.mark(f"spec{spec}_rep{rep}_hold_start")
-                    time.sleep(C.R10_HOLD_S)
+                    time.sleep(C.EXP10_HOLD_S)
                     hold_obj = gr.get_var("OBJ")
                     success = "OK" if hold_obj == 2 else "DROP"
                     log.mark(f"spec{spec}_rep{rep}_hold_end_obj{hold_obj}")
@@ -422,11 +422,11 @@ def r10(args):
                     if ur:
                         ctrl, recv = ur
                         pose = recv.getActualTCPPose()
-                        pose[2] -= C.R10_LIFT_MM / 1000.0
+                        pose[2] -= C.EXP10_LIFT_MM / 1000.0
                         ctrl.moveL(pose, C.UR_LIFT_SPEED, C.UR_LIFT_ACC)
                     else:
                         pause("원위치로 내린 후")
-                    gr.move(0, C.R10_GRASP_SPE, 64)
+                    gr.move(0, C.EXP10_GRASP_SPE, 64)
                     gr.wait_arrival(C.MOVE_TIMEOUT_S)
                     w.writerow([spec, rep, grasp_obj, hold_obj, success])
                     fp.flush()
@@ -453,31 +453,31 @@ def summary(args):
         return f"{statistics.mean(vals):.1f}±{statistics.pstdev(vals):.2f}"
 
     lines = {}
-    # R02
-    p = _latest_result("R02")
+    # 02
+    p = _latest_result("02")
     if p:
         r = _rows(p)
-        lines["R02"] = (f"gPO_open={fmt_mean_sd([float(x['gPO_open']) for x in r])}, "
+        lines["02"] = (f"gPO_open={fmt_mean_sd([float(x['gPO_open']) for x in r])}, "
                         f"gPO_closed={fmt_mean_sd([float(x['gPO_closed']) for x in r])}")
-    # R03
-    p = _latest_result("R03")
+    # 03
+    p = _latest_result("03")
     if p:
         r = _rows(p)
         parts = []
         for d in ("closing", "opening"):
             pts = [(x["rPR"], x["gPO"], x["caliper_mm_mean"]) for x in r if x["direction"] == d]
             parts.append(f"{d}: " + ", ".join(f"rPR{a}→gPO{b}/{float(c):.2f}mm" for a, b, c in pts))
-        lines["R03"] = " | ".join(parts)
-    # R04
-    p = _latest_result("R04")
+        lines["03"] = " | ".join(parts)
+    # 04
+    p = _latest_result("04")
     if p:
         r = _rows(p)
         by = {}
         for x in r:
             by.setdefault(x["rSP"], []).append(float(x["move_time_s"]))
-        lines["R04"] = ", ".join(f"rSP{k}: {statistics.mean(v):.2f}s" for k, v in by.items())
-    # R05
-    p = _latest_result("R05")
+        lines["04"] = ", ".join(f"rSP{k}: {statistics.mean(v):.2f}s" for k, v in by.items())
+    # 05
+    p = _latest_result("05")
     if p:
         r = _rows(p)
         by = {}
@@ -485,35 +485,35 @@ def summary(args):
             if x["CUR_steady"]:
                 by.setdefault(x["rFR"], []).append(float(x["CUR_steady"]))
         if by:
-            lines["R05"] = ", ".join(f"rFR{k}: CUR={statistics.mean(v):.1f}" for k, v in by.items())
+            lines["05"] = ", ".join(f"rFR{k}: CUR={statistics.mean(v):.1f}" for k, v in by.items())
         else:
-            lines["R05"] = "CUR 미지원 — gOBJ/gPO 기록만 (" + \
+            lines["05"] = "CUR 미지원 — gOBJ/gPO 기록만 (" + \
                 ", ".join(f"rFR{x['rFR']}:gOBJ{x['gOBJ']}" for x in r[:5]) + " ...)"
-    # R06
-    p = _latest_result("R06")
+    # 06
+    p = _latest_result("06")
     if p:
         r = _rows(p)
-        lines["R06"] = ", ".join(f"rFR{x['rFR']}: {x['slip_force_N']}N" for x in r)
-    # R07 / R08
-    for run, key in (("R07", "rFR"), ("R08", "rSP")):
+        lines["06"] = ", ".join(f"rFR{x['rFR']}: {x['slip_force_N']}N" for x in r)
+    # 07 / 08
+    for run, key in (("07", "rFR"), ("08", "rSP")):
         p = _latest_result(run)
         if p:
             r = _rows(p)
             dbs = [float(x["debounce_ms"]) for x in r if x["debounce_ms"]]
-            ok = sum(1 for x in r if x["gOBJ"] == ("2" if run == "R07" else "3"))
+            ok = sum(1 for x in r if x["gOBJ"] == ("2" if run == "07" else "3"))
             lines[run] = (f"디바운스 {fmt_mean_sd(dbs)}ms (n={len(dbs)}), "
                           f"기대 gOBJ 일치 {ok}/{len(r)}") if dbs else f"기대 gOBJ 일치 {ok}/{len(r)}"
-    # R09
-    p = _latest_result("R09")
+    # 09
+    p = _latest_result("09")
     if p:
         r = _rows(p)
-        lines["R09"] = f"{len(set(x['combo_id'] for x in r))}조합 × {C.R09_REPS}회 완료, CSV: {os.path.basename(p)}"
-    # R10
-    p = _latest_result("R10")
+        lines["09"] = f"{len(set(x['combo_id'] for x in r))}조합 × {C.EXP09_REPS}회 완료, CSV: {os.path.basename(p)}"
+    # 10
+    p = _latest_result("10")
     if p:
         r = _rows(p)
         ok = sum(1 for x in r if x["success"] == "OK")
-        lines["R10"] = f"성공 {ok}/{len(r)} (" + \
+        lines["10"] = f"성공 {ok}/{len(r)} (" + \
             ", ".join(f"시편{x['specimen']}r{x['rep']}:{x['success']}" for x in r) + ")"
 
     if not lines:
@@ -532,13 +532,13 @@ def summary(args):
 
 # ---------------------------------------------------------------- CLI -----
 def main():
-    runs = {"r01": r01, "r02": r02, "r03": r03, "r04": r04, "r05": r05,
-            "r06": r06, "r07": r07, "r08": r08, "r09-draw": r09_draw,
-            "r09": r09, "r10": r10, "summary": summary}
+    runs = {"01": exp01, "02": exp02, "03": exp03, "04": exp04, "05": exp05,
+            "06": exp06, "07": exp07, "08": exp08, "09-draw": exp09_draw,
+            "09": exp09, "10": exp10, "summary": summary}
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("run", choices=sorted(runs.keys()), help="실행할 런")
-    p.add_argument("--ur", action="store_true", help="R10: ur_rtde로 UR 자동 이동")
+    p.add_argument("--ur", action="store_true", help="10: ur_rtde로 UR 자동 이동")
     args = p.parse_args()
     runs[args.run](args)
 

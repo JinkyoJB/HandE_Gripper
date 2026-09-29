@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""파지력 '합' 보정에 딸린 산출물 재생성 — 동기화 CSV, R05 지표 CSV, summary.json."""
+"""파지력 '합' 보정에 딸린 산출물 재생성 — 동기화 CSV, 05 지표 CSV, summary.json."""
 import csv, json, os
 import numpy as np
 from common import *
@@ -43,12 +43,12 @@ def merged(run):
 
 
 od = os.path.join(DST, "90_동기화")
-for run in ["R05", "R07", "R09"]:
+for run in ["05", "07", "09"]:
     hdr, rows = merged(run)
     wcsv(os.path.join(od, f"{run}_동기화_시계열.csv"), hdr, rows)
     print(f"90_동기화/{run}_동기화_시계열.csv  {len(rows)}행")
 
-# ── 2. R07 16조합 파지력 (R05 절의 대체 데이터)
+# ── 2. 07 16조합 파지력 (05 절의 대체 데이터)
 grid = {tuple(int(x) for x in k.split("_")): v for k, v in FS["grid"].items()}
 rows = []
 for f in FR:
@@ -57,12 +57,12 @@ for f in FR:
         rows.append([f, s, round(float(np.mean(v)), 1), round(float(np.std(v)), 2), len(v),
                      round(20 + 165 * f / 255, 1),
                      round(float(np.mean(v)) / (20 + 165 * f / 255), 2)])
-wcsv(os.path.join(DST, "R05_힘_거동", "R05대체_R07_파지력.csv"),
+wcsv(os.path.join(DST, "05_힘_거동", "05대체_07_파지력.csv"),
      ["rFR", "rSP", "파지력_N", "표준편차_N", "n", "사양식_N", "실측_사양_비"], rows)
-print(f"R05_힘_거동/R05대체_R07_파지력.csv  {len(rows)}행")
+print(f"05_힘_거동/05대체_07_파지력.csv  {len(rows)}행")
 
 # ── 3. summary.json
-R["R07"]["F_peak"] = FS["peak"]
+R["07"]["F_peak"] = FS["peak"]
 R["force"] = dict(convention="로드셀 2채널의 합 (KS B ISO 18646-3 5.3.3)",
                   coef=FS["coef"], r2=FS["r2"], min=FS["min"], max=FS["max"], peak=FS["peak"],
                   grid={f"rFR{f}_rSP{s}": round(float(np.mean(grid[(f, s)])), 1)
@@ -76,7 +76,7 @@ print("summary.json 갱신 —",
 import shutil
 sd = os.path.join(DST, "00_분석스크립트")
 for f in ["common.py", "sync.py", "analyze.py", "refine.py", "makesvg.py", "svgchart.py",
-          "export.py", "r05_from_r07.py", "force_fix.py", "regen_force.py"]:
+          "export.py", "force_from_timing.py", "force_fix.py", "regen_force.py"]:
     shutil.copy(os.path.join(HERE, f), os.path.join(sd, f))
 shutil.copy(os.path.join(HERE, "force_sum.json"), os.path.join(sd, "force_sum.json"))
 print("00_분석스크립트 사본 갱신")
